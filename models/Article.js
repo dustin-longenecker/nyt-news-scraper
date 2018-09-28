@@ -16,9 +16,20 @@ var ArticleSchema = new Schema({
     type: String,
     required: true
   },
-  // `note` is an object that stores a Note id
-  // The ref property links the ObjectId to the Note model
-  // This allows us to populate the Article with an associated Note
+  //Article `summary` is required and of type String
+  summary: {
+    type: String,
+    required: true
+  },
+  image: {
+    type: String
+  },
+  //`saved` is this Article saved? want to be default to false until save button clicked
+  saved: {
+    type: Boolean,
+    required: true,
+    default: false
+  },
   note: {
     type: Schema.Types.ObjectId,
     ref: "Note"

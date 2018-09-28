@@ -1,24 +1,23 @@
-// Grab the articles as a json
-$.getJSON("/articles", function(data) {
-  // For each one
-  for (var i = 0; i < data.length; i++) {
-    // Display the apropos information on the page
-    $("#articles").append("<p data-id='" + data[i]._id + "'>" + data[i].title + "<br />" + data[i].link + "</p><input type='button' value='Save' id='save'>");
-  }
-});
 
-$(document).on("click", "#scrape", function(){
-  $.ajax({
-    method: "GET",
-    url: "/scrape/"
-  }).then(function(data){
+//scrape the articles
+$("#scrape-articles").on("click", function(event) {
 
-  })
-})
-// Whenever someone clicks a p tag
-$(document).on("click", "p", function() {
+    $.ajax({
+      method: "GET",
+      url: "/scrape"
+    })
+    .then(function (data) {
+      console.log(data);
+      location.href = ('/');
+    })
+    
+  });
+
+// Whenever someone clicks a "make a comment" button
+$("body").on("click", "#make-comment", function() {
   // Empty the notes from the note section
-  $("#notes").empty();
+  console.log("trying to get info on title");
+  //$("#notes").empty();
   // Save the id from the p tag
   var thisId = $(this).attr("data-id");
 
@@ -28,52 +27,118 @@ $(document).on("click", "p", function() {
     url: "/articles/" + thisId
   })
     // With that done, add the note information to the page
-    .then(function(data) {
+    .then(function (data) {
+      $('#comment-modal').modal('show');
       console.log(data);
       // The title of the article
       $("#notes").append("<h2>" + data.title + "</h2>");
-      // An input to enter a new title
-      $("#notes").append("<input id='titleinput' name='title' >");
       // A textarea to add a new note body
       $("#notes").append("<textarea id='bodyinput' name='body'></textarea>");
       // A button to submit a new note, with the id of the article saved to it
-      $("#notes").append("<button data-id='" + data._id + "' id='savenote'>Save Note</button>");
+      $("#notes").append("<button data-id='" + data._id + "' id='save-comment'>Save Note</button>");
 
       // If there's a note in the article
       if (data.note) {
-        // Place the title of the note in the title input
-        $("#titleinput").val(data.note.title);
         // Place the body of the note in the body textarea
         $("#bodyinput").val(data.note.body);
       }
+    }).catch(function (err) {
+      console.log("Error in make comment in app.js not working: " + err);
     });
 });
 
-// When you click the savenote button
-$(document).on("click", "#savenote", function() {
+// When you click the save-comment button from modal
+$("body").on("click", "#save-comment", function(event) {
   // Grab the id associated with the article from the submit button
+  $('#comment-modal').modal('hide');
   var thisId = $(this).attr("data-id");
-
+  console.log("comment saved");
+  // Run a PUT request to update saved value of article from false to true
   // Run a POST request to change the note, using what's entered in the inputs
   $.ajax({
     method: "POST",
     url: "/articles/" + thisId,
     data: {
-      // Value taken from title input
-      title: $("#titleinput").val(),
       // Value taken from note textarea
-      body: $("#bodyinput").val()
+      body: $("#comment-input").trim().val()
     }
   })
     // With that done
-    .then(function(data) {
+    .then(function (data) {
       // Log the response
       console.log(data);
       // Empty the notes section
-      $("#notes").empty();
+      $("#comment-input").empty();
+    })
+    .catch(function (err) {
+      console.log("Error in saving comment in app.js not working: " + err);
     });
+    
+  
+});
 
-  // Also, remove the values entered in the input and textarea for note entry
-  $("#titleinput").val("");
-  $("#bodyinput").val("");
+//whenever someone clicks on save article button
+$("body").on("click", "#save-article", function (event) {
+  // Grab the id associated with the article from the submit button
+  var thisId = $(this).attr("data-id");
+  console.log("article saved with this id: " + thisId);
+  // Run a PUT request to update saved value of article from false to true
+  $.ajax({
+    method: "PUT",
+    url: "/savedarticles/" + thisId,
+  })
+  // With that done
+  .then(function (data) {
+    // Log the response
+    //console.log("suzy lives here");
+    location.reload();
+  })
+  .catch(function (err) {
+    console.log("Error in article app.js not working: " + err);
+  });
+});
+
+//when ever someone clicks to remove save button or unsave the article
+$("body").on("click", "#unsave-article", function (event) {
+  // Grab the id associated with the article from the submit button
+  var thisId = $(this).attr("data-id");
+  console.log("article saved with this id: " + thisId);
+  // Run a PUT request to update saved value of article from false to true
+  $.ajax({
+    method: "PUT",
+    url: "/unsavedarticles/" + thisId,
+  })
+    // With that done
+    .then(function (data) {
+      // Log the response
+      location.reload();
+    })
+    .catch(function (err) {
+      console.log("Error in unsaving article app.js not working: " + err);
+    });
+});
+
+//whenver someone clicks on the delete article button
+$("body").on("click", "#delete-article", function (event) {
+  // Grab the id associated with the article from the submit button
+  var thisId = $(this).attr("data-id");
+  console.log("article saved with this id: " + thisId);
+  // Run a DELETE request to remove article from database
+  $.ajax({
+    method: "DELETE",
+    url: "/deletearticles/" + thisId,
+  })
+    // With that done
+    .then(function (data) {
+      console.log("the article with this id: " + thisId + " was deleted from the database");
+      location.reload();
+    })
+    .catch(function (err) {
+      console.log("Error in article app.js not working: " + err);
+    });
+});
+
+//when someone clicks to view saved articles
+$('#saved').on("click", function (event) {
+  location.href=('/saved');
 });
