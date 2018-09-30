@@ -1,53 +1,34 @@
-var axios = require("axios");
-var cheerio = require("cheerio");
-
-// Require all models
+// Controller for our scraper
+// ============================
 var db = require("../models");
+var scrape = require("../scripts/scrape");
 
-// Initialize Express
-//var app = express();
-var express = require("express");
-var app = express();
-
-//fetch all had app.js file contents here
-// Grab the headlines as a json
-module.exports = function (app) {
-
-  app.get("/scrape", function(req, res) {
-    // First, we grab the body of the html with request
-    axios.get("https://www.coindesk.com/").then(function(response) {
-      // Then, we load that into cheerio and save it to $ for a shorthand selector
-      var $ = cheerio.load(response.data);
-
-      // Now, we grab every h2 within an article tag, and do the following:
-      $("div.article h3").each(function(i, element) {
-        // Save an empty result object
-        var result = {};
-
-        // Add the text and href of every link, and save them as properties of the result object
-        result.title = $(this)
-          .text();
-        result.link = $(this)
-          .children("a.fade")
-          .attr("href");
-          result.summary = "something";
-          result.image = "something";
-
-        // Create a new Article using the `result` object built from scraping
-        db.Article.create(result)
-          .then(function(dbArticle) {
-            // View the added result in the console
-            console.log(dbArticle);
-          })
-          .catch(function(err) {
-            // If an error occurred, send it to the client
-            return res.json(err);
+module.exports = {
+  scrapeHeadlines: function(req, res) {
+    // scrape the NYT
+    return scrape()
+      .then(function(articles) {
+        // then insert articles into the db
+        return db.Headline.create(articles);
+      })
+      .then(function(dbHeadline) {
+        if (dbHeadline.length === 0) {
+          res.json({
+            message: "No new articles today. Check back tomorrow!"
           });
+        }
+        else {
+          // Otherwise send back a count of how many new articles we got
+          res.json({
+            message: "Added " + dbHeadline.length + " new articles!"
+          });
+        }
+      })
+      .catch(function(err) {
+        // This query won't insert articles with duplicate headlines, but it will error after inserting the others
+        res.json({
+          message: "Scrape complete!!"
+        });
       });
-
-      // If we were able to successfully scrape and save an Article, send a message to the client
-      // res.redirect("/");
-    });
-  });
-
-}
+  }
+};

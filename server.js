@@ -1,60 +1,44 @@
+// Web Scraper Homework Solution Example
+// (be sure to watch the video to see
+// how to operate the site in the browser)
+// -/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/
+
+// Require our dependencies
 var express = require("express");
-var bodyParser = require("body-parser");
-var logger = require("morgan");
 var mongoose = require("mongoose");
+var exphbs = require("express-handlebars");
+var bodyParser = require("body-parser");
 
-// Our scraping tools
-// Axios is a promised-based http library, similar to jQuery's Ajax method
-// It works on the client and on the server
-var axios = require("axios");
-var cheerio = require("cheerio");
-
-// Require all models
-var db = require("./models");
-
+// Set up our port to be either the host's designated port, or 3000
 var PORT = process.env.PORT || 3000;
 
-// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
-var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/coindeskPopulater";
-
-// Initialize Express
+// Instantiate our Express App
 var app = express();
 
-// Configure middleware
+// Require our routes
+var routes = require("./routes");
 
-// Use morgan logger for logging requests
-app.use(logger("dev"));
-// Use body-parser for handling form submissions
-//changed to false
-app.use(bodyParser.urlencoded({ extended: false }));
-
-//Parse application/json
-app.use(bodyParser.json());
-
-// Use express.static to serve the public folder as a static directory
+// Designate our public folder as a static directory
 app.use(express.static("public"));
 
-// By default mongoose uses callbacks for async queries, we're setting it to use promises (.then syntax) instead
+// Connect Handlebars to our Express app
+app.engine("handlebars", exphbs({ defaultLayout: "main" }));
+app.set("view engine", "handlebars");
+
+// Use bodyParser in our app
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+
+// Have every request go through our route middleware
+app.use(routes);
+
+// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
+var MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/mongoHeadlines";
+
 // Connect to the Mongo DB
-mongoose.Promise = Promise;
 mongoose.connect(MONGODB_URI);
 
-
-//Set Handlebars
-var exphbs = require("express-handlebars");
-//sets main.handlebars as the default layout and our view engine as handlebar
-app.engine("handlebars", exphbs({ defaultLayout: "main" }));
-app.set("view engine", "handlebars")
-
-var handlebars = require("handlebars");
-handlebars.registerHelper("json", context => JSON.stringify(context));
-
-//routes
-require("./controllers/fetch.js")(app);
-require("./controllers/headline.js")(app);
-require("./controllers/note.js")(app);
-
-// Start the server
+// Listen on the port
 app.listen(PORT, function() {
-  console.log("App running on port " + PORT + "!");
+  console.log("Listening on port: " + PORT);
 });
